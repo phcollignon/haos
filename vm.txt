@@ -1,0 +1,90 @@
+For VM setup
+
+1. Check for IOMMU Support
+First, ensure your system's processor supports IOMMU (VT-d for Intel or AMD-Vi for AMD), and it's enabled in the BIOS.
+
+To check if IOMMU is enabled in Linux, run:
+
+sh
+Copy code
+dmesg | grep -e DMAR -e IOMMU
+If you see output indicating DMAR or IOMMU, it's likely enabled.
+
+2. Enable IOMMU in the Kernel
+You need to enable IOMMU in the kernel. For Intel and AMD, edit the GRUB configuration.
+
+For Intel CPUs, open /etc/default/grub and modify the GRUB_CMDLINE_LINUX_DEFAULT line to include intel_iommu=on. It might look something like this:
+
+sh
+Copy code
+GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on"
+For AMD CPUs, use amd_iommu=on instead:
+
+sh
+Copy code
+GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_iommu=on"
+After editing, update GRUB and reboot:
+
+sh
+Copy code
+sudo update-grub
+sudo reboot
+3. Install Necessary Packages
+Install packages for KVM, QEMU, and VFIO:
+
+sh
+Copy code
+sudo apt update
+sudo apt install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virtinst libvirt-daemon-driver-qemu
+4. Identify the Ethernet Card's PCI Address
+Use lspci to list PCI devices and grep to find your Ethernet card:
+
+sh
+Copy code
+lspci | grep Ethernet
+Note the PCI address of the card you want to use (e.g., 0000:XX:YY.Z).
+
+5. Bind the Ethernet Card to VFIO-PCI
+First, find the vendor and device ID:
+
+sh
+Copy code
+lspci -n -s 0000:XX:YY.Z
+Replace 0000:XX:YY.Z with your device’s PCI address. You’ll see output like 8086:10d3, where the first part is the vendor ID and the second part is the device ID.
+
+Next, bind your device to vfio-pci. Add the IDs to the VFIO modules:
+
+sh
+Copy code
+echo "options vfio-pci ids=8086:10d3" | sudo tee /etc/modprobe.d/vfio-pci.conf
+Replace 8086:10d3 with your vendor and device IDs. Then, regenerate the initramfs and reboot:
+
+sh
+Copy code
+sudo update-initramfs -u
+sudo reboot
+6. Attach the Device to the VM
+Modify your virt-install command to use the PCI device:
+
+sh
+Copy code
+virt-install \
+  --import \
+  --name haos \
+  --description "Home Assistant OS" \
+  --memory 2048 \
+  --vcpus 2 \
+  --cpu host \
+  --disk path=/path/to/haos_ova-11.5.qcow2,format=qcow2,bus=virtio \
+  --hostdev 0000:XX:YY.Z,driver_name=vfio \
+  --os-variant=generic \
+  --graphics none \
+  --boot uefi
+Replace 0000:XX:YY.Z with your device’s PCI address.
+
+Note: PCI passthrough is complex and may involve more detailed configuration based on your specific setup, including potential adjustments for secure boot, additional kernel parameters for isolating CPUs or memory for the VM, and more. Always back up important data before making significant system changes, and consider testing in a non-production environment first.
+
+
+
+
+
