@@ -97,7 +97,10 @@ virt-install \
 
 Note: PCI passthrough is complex and may involve more detailed configuration based on your specific setup, including potential adjustments for secure boot, additional kernel parameters for isolating CPUs or memory for the VM, and more. Always back up important data before making significant system changes, and consider testing in a non-production environment first.
 
+Access virt-manager
 
+sudo usermod -a -G libvirt $(whoami)
+newgrp libvirt
 
 
 
