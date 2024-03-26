@@ -81,6 +81,19 @@ virt-install \
   --graphics none \
   --boot uefi
 Replace 0000:XX:YY.Z with your device’s PCI address.
+i.e.
+virt-install \
+  --import \
+  --name haos \
+  --description "Home Assistant OS" \
+  --memory 8192 \
+  --vcpus 2 \
+  --cpu host \
+  --disk path=/home/phico/haos_ova-12.1.qcow2,format=qcow2,bus=virtio \
+  --hostdev 0000:02:00.1,driver_name=vfio \
+  --os-variant=generic \
+  --graphics none \
+  --boot uefi
 
 Note: PCI passthrough is complex and may involve more detailed configuration based on your specific setup, including potential adjustments for secure boot, additional kernel parameters for isolating CPUs or memory for the VM, and more. Always back up important data before making significant system changes, and consider testing in a non-production environment first.
 
